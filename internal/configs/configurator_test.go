@@ -1005,7 +1005,10 @@ func TestUpdateTransportServerMetricsLabels(t *testing.T) {
 				Namespace: "default",
 			},
 			Spec: conf_v1alpha1.TransportServerSpec{
-				Host: "example.com",
+				Listener: conf_v1alpha1.TransportServerListener{
+					Name:     "dns-tcp",
+					Protocol: "TCP",
+				},
 			},
 		},
 		PodsByIP: map[string]string{
@@ -1056,7 +1059,7 @@ func TestUpdateTransportServerMetricsLabels(t *testing.T) {
 	expectedLabelUpdater := &mockLabelUpdater{
 		streamUpstreamServerLabels: streamUpstreamServerLabels,
 		streamServerZoneLabels: map[string][]string{
-			"example.com": {"transportserver", "test-transportserver", "default"},
+			"dns-tcp": {"transportserver", "test-transportserver", "default"},
 		},
 		streamUpstreamServerPeerLabels: streamUpstreamServerPeerLabels,
 		upstreamServerPeerLabels:       make(map[string][]string),
@@ -1097,7 +1100,7 @@ func TestUpdateTransportServerMetricsLabels(t *testing.T) {
 	expectedLabelUpdater = &mockLabelUpdater{
 		streamUpstreamServerLabels: streamUpstreamServerLabels,
 		streamServerZoneLabels: map[string][]string{
-			"example.com": {"transportserver", "test-transportserver", "default"},
+			"dns-tcp": {"transportserver", "test-transportserver", "default"},
 		},
 		streamUpstreamServerPeerLabels: streamUpstreamServerPeerLabels,
 		upstreamServerPeerLabels:       map[string][]string{},
