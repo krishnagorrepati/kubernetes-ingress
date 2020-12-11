@@ -1052,10 +1052,12 @@ func TestUpdateTransportServerMetricsLabels(t *testing.T) {
 		"upstream-1": {"service-1", "transportserver", "test-transportserver", "default"},
 		"upstream-2": {"service-2", "transportserver", "test-transportserver", "default"},
 	}
+
 	streamUpstreamServerPeerLabels := map[string][]string{
 		"upstream-1/10.0.0.1:80": {"pod-1"},
 		"upstream-2/10.0.0.2:80": {"pod-2"},
 	}
+
 	expectedLabelUpdater := &mockLabelUpdater{
 		streamUpstreamServerLabels: streamUpstreamServerLabels,
 		streamServerZoneLabels: map[string][]string{
@@ -1113,9 +1115,6 @@ func TestUpdateTransportServerMetricsLabels(t *testing.T) {
 		t.Errorf("updateTransportServerMetricsLabels() updated labels to \n%+v but expected \n%+v", cnf.labelUpdater, expectedLabelUpdater)
 	}
 
-	streamUpstreamServerLabels = map[string][]string{}
-	streamUpstreamServerPeerLabels = map[string][]string{}
-
 	expectedLabelUpdater = &mockLabelUpdater{
 		upstreamServerLabels:           map[string][]string{},
 		serverZoneLabels:               map[string][]string{},
@@ -1126,6 +1125,84 @@ func TestUpdateTransportServerMetricsLabels(t *testing.T) {
 	}
 
 	cnf.deleteTransportServerMetricsLabels("default/test-transportserver")
+	if !reflect.DeepEqual(cnf.labelUpdater, expectedLabelUpdater) {
+		t.Errorf("deleteTransportServerMetricsLabels() updated labels to \n%+v but expected \n%+v", cnf.labelUpdater, expectedLabelUpdater)
+	}
+
+	tsExTLS := &TransportServerEx{
+		TransportServer: &conf_v1alpha1.TransportServer{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name:      "test-transportserver-tls",
+				Namespace: "default",
+			},
+			Spec: conf_v1alpha1.TransportServerSpec{
+				Listener: conf_v1alpha1.TransportServerListener{
+					Name:     "tls-passthrough",
+					Protocol: "TLS_PASSTHROUGH",
+				},
+				Host: "example.com",
+			},
+		},
+		PodsByIP: map[string]string{
+			"10.0.0.3:80": "pod-3",
+		},
+	}
+
+	streamUpstreams = []version2.StreamUpstream{
+		{
+			Name: "upstream-3",
+			Servers: []version2.StreamUpstreamServer{
+				{
+					Address: "10.0.0.3:80",
+				},
+			},
+			UpstreamLabels: version2.UpstreamLabels{
+				Service:           "service-3",
+				ResourceType:      "transportserver",
+				ResourceName:      tsExTLS.TransportServer.Name,
+				ResourceNamespace: tsExTLS.TransportServer.Namespace,
+			},
+		},
+	}
+
+	streamUpstreamServerLabels = map[string][]string{
+		"upstream-3": {"service-3", "transportserver", "test-transportserver-tls", "default"},
+	}
+
+	streamUpstreamServerLabels = map[string][]string{
+		"upstream-3": {"service-3", "transportserver", "test-transportserver-tls", "default"},
+	}
+
+	streamUpstreamServerPeerLabels = map[string][]string{
+		"upstream-3/10.0.0.3:80": {"pod-3"},
+	}
+
+	expectedLabelUpdater = &mockLabelUpdater{
+		streamUpstreamServerLabels: streamUpstreamServerLabels,
+		streamServerZoneLabels: map[string][]string{
+			"example.com": {"transportserver", "test-transportserver-tls", "default"},
+		},
+		streamUpstreamServerPeerLabels: streamUpstreamServerPeerLabels,
+		upstreamServerPeerLabels:       make(map[string][]string),
+		upstreamServerLabels:           make(map[string][]string),
+		serverZoneLabels:               make(map[string][]string),
+	}
+
+	cnf.updateTransportServerMetricsLabels(tsExTLS, streamUpstreams)
+	if !reflect.DeepEqual(cnf.labelUpdater, expectedLabelUpdater) {
+		t.Errorf("updateTransportServerMetricsLabels() updated labels to \n%+v but expected \n%+v", cnf.labelUpdater, expectedLabelUpdater)
+	}
+
+	expectedLabelUpdater = &mockLabelUpdater{
+		upstreamServerLabels:           map[string][]string{},
+		serverZoneLabels:               map[string][]string{},
+		upstreamServerPeerLabels:       map[string][]string{},
+		streamUpstreamServerPeerLabels: map[string][]string{},
+		streamUpstreamServerLabels:     map[string][]string{},
+		streamServerZoneLabels:         map[string][]string{},
+	}
+
+	cnf.deleteTransportServerMetricsLabels("default/test-transportserver-tls")
 	if !reflect.DeepEqual(cnf.labelUpdater, expectedLabelUpdater) {
 		t.Errorf("deleteTransportServerMetricsLabels() updated labels to \n%+v but expected \n%+v", cnf.labelUpdater, expectedLabelUpdater)
 	}

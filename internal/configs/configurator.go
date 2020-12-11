@@ -483,7 +483,6 @@ func (cnf *Configurator) updateTransportServerMetricsLabels(transportServerEx *T
 
 	removedUpstreams := findRemovedKeys(cnf.metricLabelsIndex.transportServerUpstreams[key], newUpstreams)
 	cnf.metricLabelsIndex.transportServerUpstreams[key] = newUpstreamsNames
-
 	cnf.labelUpdater.UpdateStreamUpstreamServerPeerLabels(upstreamServerPeerLabels)
 	cnf.labelUpdater.DeleteStreamUpstreamServerPeerLabels(removedPeers)
 	cnf.labelUpdater.UpdateStreamUpstreamServerLabels(labels)
@@ -491,17 +490,22 @@ func (cnf *Configurator) updateTransportServerMetricsLabels(transportServerEx *T
 
 	streamServerZoneLabels := make(map[string][]string)
 	newZones := make(map[string]bool)
-	newZonesNames := []string{transportServerEx.TransportServer.Spec.Listener.Name}
+	zoneName := transportServerEx.TransportServer.Spec.Listener.Name
 
-	streamServerZoneLabels[transportServerEx.TransportServer.Spec.Listener.Name] = []string{
+	if transportServerEx.TransportServer.Spec.Host != "" {
+		zoneName = transportServerEx.TransportServer.Spec.Host
+	}
+
+	newZonesNames := []string{zoneName}
+
+	streamServerZoneLabels[zoneName] = []string{
 		"transportserver", transportServerEx.TransportServer.Name, transportServerEx.TransportServer.Namespace}
 
-	newZones[transportServerEx.TransportServer.Spec.Listener.Name] = true
+	newZones[zoneName] = true
 	removedZones := findRemovedKeys(cnf.metricLabelsIndex.transportServerServerZones[key], newZones)
 	cnf.metricLabelsIndex.transportServerServerZones[key] = newZonesNames
 	cnf.labelUpdater.UpdateStreamServerZoneLabels(streamServerZoneLabels)
 	cnf.labelUpdater.DeleteStreamServerZoneLabels(removedZones)
-
 }
 
 func (cnf *Configurator) deleteTransportServerMetricsLabels(key string) {
